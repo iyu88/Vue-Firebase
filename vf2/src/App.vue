@@ -13,6 +13,7 @@
     <v-btn icon to="/">
       <v-icon>mdi-magnify</v-icon>
     </v-btn>
+    <site-sign></site-sign>
     </v-app-bar>
     <v-navigation-drawer app v-model="drawer" width="400">
       <site-menu :items="site.menu"></site-menu>
@@ -28,9 +29,10 @@
 import SiteTitle from '@/views/site/title'
 import SiteFooter from '@/views/site/footer'
 import SiteMenu from '@/views/site/menu'
+import SiteSign from '@/views/site/sign'
 
 export default {
-  components: { SiteTitle, SiteFooter, SiteMenu },
+  components: { SiteTitle, SiteFooter, SiteMenu, SiteSign },
   name: 'App',
   data () {
     return {
