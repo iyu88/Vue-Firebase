@@ -30,6 +30,31 @@ const routes = [
     path: '/board',
     name: 'board',
     component: () => import('../views/board/index.vue')
+  },
+  {
+    path: '/storage',
+    name: 'storage',
+    component: () => import('../views/storage.vue')
+  },
+  {
+    path: '/editor',
+    name: 'editor',
+    component: () => import('../views/editor.vue')
+  },
+  {
+    path: '/:collection/:document',
+    name: 'collection-document',
+    component: () => import('../views/renderer.vue')
+  },
+  {
+    path: '/:collection/:document/:action',
+    name: 'collection-document-action',
+    component: () => import('../views/renderer.vue')
+  },
+  {
+    path: '*',
+    name: 'error',
+    component: () => import('../views/error.vue')
   }
 ]
 

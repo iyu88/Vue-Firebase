@@ -5,6 +5,7 @@ import store from './store'
 import vuetify from './plugins/vuetify'
 import './plugins/firebase'
 import './error'
+import './plugins/editor'
 
 Vue.config.productionTip = false
 
