@@ -4,8 +4,10 @@
             <v-toolbar color="accent" dense flat dark >
                 <v-toolbar-title v-text="info.title"></v-toolbar-title>
             <v-spacer/>
-            <v-btn icon @click="write"><v-icon>mdi-pencil</v-icon></v-btn>
-            <v-btn icon @click="articleWrite"><v-icon>mdi-plus</v-icon></v-btn>
+            <template v-if="user">
+              <v-btn icon @click="write" :disabled="user.level > 0"><v-icon>mdi-pencil</v-icon></v-btn>
+              <v-btn icon @click="articleWrite" :disabled="user.level > 4"><v-icon>mdi-plus</v-icon></v-btn>
+            </template>
             </v-toolbar>
             <v-card-text v-if="info.createdAt">
                 <v-alert color="info" outlined dismissible>
@@ -17,11 +19,15 @@
             <v-card-text>
                 articles
             </v-card-text>
+            <article-index :info="info" :document="document" ></article-index>
         </v-card>
     </v-container>
 </template>
 <script>
+import ArticleIndex from './article/index'
+
 export default {
+  components: { ArticleIndex },
   props: ['document'],
   data () {
     return {
@@ -37,6 +43,11 @@ export default {
   watch: {
     document () {
       this.subscribe()
+    }
+  },
+  computed: {
+    user () {
+      return this.$store.state.user
     }
   },
   created () {
@@ -58,7 +69,7 @@ export default {
       this.$router.push(this.$route.path + '/board-write')
     },
     async articleWrite () {
-      this.$router.push({ path: this.$route.path + '/article-write', query: { articleId: 'new' } })
+      this.$router.push({ path: this.$route.path + '/article-write', query: { articleId: '' } })
     }
   }
 }
