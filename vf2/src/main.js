@@ -6,6 +6,7 @@ import vuetify from './plugins/vuetify'
 import './plugins/firebase'
 import './error'
 import './plugins/editor'
+import './plugins/moment.js'
 
 Vue.config.productionTip = false
 
