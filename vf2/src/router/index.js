@@ -11,25 +11,9 @@ const routes = [
     component: Home
   },
   {
-    path: '/about',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
-  },
-  {
-    path: '/xxx',
-    name: 'xxx',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/xxx.vue')
-  },
-  {
     path: '/board',
     name: 'board',
-    component: () => import('../views/board/index.vue')
+    component: () => import('@/views/board/index.vue')
   },
   {
     path: '/storage',
@@ -39,17 +23,17 @@ const routes = [
   {
     path: '/editor',
     name: 'editor',
-    component: () => import('../views/editor.vue')
+    component: () => import('@/views/editor.vue')
   },
   {
-    path: '/:collection/:document',
-    name: 'collection-document',
-    component: () => import('../views/renderer.vue')
+    path: '/board/:info',
+    name: 'board-info',
+    component: () => import('@/views/board/info.vue')
   },
   {
-    path: '/:collection/:document/:action',
-    name: 'collection-document-action',
-    component: () => import('../views/renderer.vue')
+    path: '/board/:info/:article',
+    name: 'board-info-article',
+    component: () => import('@/views/board/article.vue')
   },
   {
     path: '*',

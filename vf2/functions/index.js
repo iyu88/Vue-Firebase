@@ -81,7 +81,7 @@ exports.onDeleteBoardArticle = functions.region(region).firestore.document('boar
   const ps = []
   ps.push('boards')
   ps.push(context.params.bid)
-  ps.push(context.params.aid + ".md")
+  ps.push(context.params.aid + '-' + snap.data().uid + ".md")
 
   await admin.storage().bucket().file(ps.join('/')).delete().catch(e => console.error('storage remove err + ' + e.message))
 })
