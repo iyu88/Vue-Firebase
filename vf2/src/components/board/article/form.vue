@@ -9,16 +9,28 @@
           <v-btn icon @click="save" :disabled="!user"><v-icon>mdi-content-save</v-icon></v-btn>
           </v-toolbar>
           <v-card-text>
-            <v-text-field v-model="form.title" outlined label="제목"></v-text-field>
-            <editor v-if="articleId === 'new'" :initialValue="form.content" ref='editor' initialEditType="wysiwyg" height='400px' :options="{ }"></editor>
-            <template v-else>
-              <editor v-if="form.content" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height='400px' :options="{ }"></editor>
-              <v-container v-else>
-                <v-row justify="center" align="center">
-                  <v-progress-circular indeterminate></v-progress-circular>
-                </v-row>
-              </v-container>
-            </template>
+            <v-row>
+              <v-col cols="12" sm="4" v-if="board">
+                <v-combobox v-model="form.category" :items="board.categories" label="종류" outlined hide-details />
+              </v-col>
+              <v-col cols="12" sm="8" v-if="board">
+                <v-combobox v-model="form.tags" :items="board.tags" label="태그" outlined multiple small-chips hide-details />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field v-model="form.title" outlined label="제목"></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <editor v-if="articleId === 'new'" :initialValue="form.content" ref='editor' initialEditType="wysiwyg" height='400px' :options="{ }"></editor>
+                <template v-else>
+                  <editor v-if="form.content" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height='400px' :options="{ }"></editor>
+                  <v-container v-else>
+                    <v-row justify="center" align="center">
+                      <v-progress-circular indeterminate></v-progress-circular>
+                    </v-row>
+                  </v-container>
+                </template>
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
       </v-form>
@@ -26,6 +38,7 @@
 </template>
 <script>
 import axios from 'axios'
+import getSummary from '@/util/getSummary.js'
 
 export default {
   props: ['boardId', 'articleId', 'action'],
@@ -33,13 +46,16 @@ export default {
     return {
       // unsubscribe: null,
       form: {
+        category: '일반',
+        tags: [],
         title: '',
         content: ''
       },
       exists: false,
       loading: false,
       ref: null,
-      article: null
+      article: null,
+      board: null
     }
   },
   watch: {
@@ -67,6 +83,8 @@ export default {
     // subscribe () {
     async fetch () {
       this.ref = this.$firebase.firestore().collection('boards').doc(this.boardId)
+      const docBoard = await this.ref.get()
+      this.board = docBoard.data()
       if (this.articleId === 'new') return
       // if (this.unsubscribe) this.unsubscribe()
       const doc = await this.ref.collection('articles').doc(this.articleId).get()
@@ -75,6 +93,8 @@ export default {
       const item = doc.data()
       this.article = item
       this.form.title = item.title
+      this.form.category = item.category
+      this.form.tags = item.tags
       const { data } = await axios.get(item.url)
       this.form.content = data
     },
@@ -88,7 +108,10 @@ export default {
         const createdAt = new Date()
         const doc = {
           title: this.form.title,
-          updatedAt: createdAt
+          category: this.form.category,
+          tags: this.form.tags,
+          updatedAt: createdAt,
+          summary: getSummary(md, 300)
         }
 
         // const batch = await this.$firebase.firestore().batch()

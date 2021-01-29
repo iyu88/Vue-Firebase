@@ -71,13 +71,18 @@ export default {
     snapshotToItems (sn) {
       this.lastDoc = last(sn.docs)
       sn.docs.forEach(doc => {
-        const exists = this.items.some(item => item.id === doc.id)
-        if (!exists) {
-          const item = doc.data()
+        const findItem = this.items.find(item => item.id === doc.id)
+        const item = doc.data()
+        if (!findItem) {
           item.id = doc.id
           item.createdAt = item.createdAt.toDate()
           item.updatedAt = item.updatedAt.toDate()
           this.items.push(item)
+        } else {
+          findItem.comment = item.comment
+          findItem.likeCount = item.likeCount
+          findItem.likeUids = item.likeUids
+          findItem.updatedAt = item.updatedAt.toDate()
         }
       })
       this.items.sort((before, after) => {
@@ -147,6 +152,7 @@ export default {
           likeCount: this.$firebase.firestore.FieldValue.increment(1), likeUids: this.$firebase.firestore.FieldValue.arrayUnion(this.fireUser.uid)
         })
       }
+      if (this.items.findIndex(el => el.id === comment.id) < LIMIT) return
       const doc = await this.docRef.collection('comments').doc(comment.id).get()
       const item = doc.data()
       comment.likeCount = item.likeCount

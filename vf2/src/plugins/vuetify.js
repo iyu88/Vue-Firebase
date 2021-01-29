@@ -12,11 +12,32 @@ Vue.use(Vuetify, {
     VIcon
   }
 })
+
+const theme = {
+  themes: {
+    light: {
+      primary: '#344059',
+      secondary: '#BFBFBF',
+      aceent: '#2C4027',
+      info: '#4E7DA6',
+      success: '#2C4027'
+    }
+    /*
+    dark : {
+      primary: #E53935
+      secondary: #FFCDD2
+      accent: #3F51B5
+    }
+    */
+  }
+}
+
 const VuetifyObj = new Vuetify({
   lang: {
     locales: { en, ko },
     current: 'ko'
-  }
+  },
+  theme
 })
 Vue.use(VuetifyToast, {
   x: 'right', // default
