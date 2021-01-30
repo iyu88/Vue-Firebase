@@ -55,7 +55,7 @@
               </span>
             </v-list-item-title>
           </v-list-item-content>
-          <v-list-item-action v-if="$store.state.editable">
+          <v-list-item-action v-if="$store.state.editable" exact>
             <v-btn icon :to="subItem.to" exact><v-icon>mdi-arrow-right-bold-circle-outline</v-icon></v-btn>
           </v-list-item-action>
         </v-list-item>

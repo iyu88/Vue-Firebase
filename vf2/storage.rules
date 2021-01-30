@@ -10,7 +10,15 @@ service firebase.storage {
         allow read: if true;
         // allow write: if request.auth!=null && request.auth.uid == userId && ( request.resource == null || (request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('application/octet-stream') && ( resource == null || request.resource.contentType == resource.contentType ))) && articleId.size() == 16
         // allow write: if request != null && request.resource != null && ( request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('application/octet-stream') && ( resource == null || request.resource.contentType == resource.contentType)) && articleId.size() == 16;
-        allow write: if request.auth != null && articleId.split('-')[1] == request.auth.uid + '.md' && request.resource != null && ( request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('application/octet-stream') && (resource == null || request.resource.contentType == resource.contentType));
+        allow write: if request.auth != null
+                    && articleId.split('-')[1] == request.auth.uid + '.md'
+                    && request.resource != null
+                    && (                      
+                      request.resource.size < 5 * 1024 * 1024
+                      && request.resource.contentType.matches('application/octet-stream')
+                      && (resource == null || request.resource.contentType == resource.contentType)                      
+                    )
+                    // && articleId.size() == 16;
       }
     }
   }

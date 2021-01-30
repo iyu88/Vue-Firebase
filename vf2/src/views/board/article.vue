@@ -1,5 +1,5 @@
 <template>
-    <article-content v-if="!action" :boardId="info" :articleId="article"/>
+    <article-content v-if="!action" :boardId="info" :articleId="article" :category="category"/>
     <article-form v-else :boardId="info" :articleId="article" :action="action" />
 </template>
 
@@ -18,6 +18,9 @@ export default {
     },
     action () {
       return this.$route.query.action
+    },
+    category () {
+      return this.$route.query.category
     }
   }
 }

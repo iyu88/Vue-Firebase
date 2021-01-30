@@ -5,9 +5,9 @@ service cloud.firestore {
     //  allow read, write: if
     //      request.time < timestamp.date(2021, 2, 21);
     // }
-    // function approvedLevel (level) {
-    //   return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.level <= level;
-    // }
+    function approvedLevel (level) {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.level <= level;
+    }
     match /boards/{boardId} {
       function incrementBoardCount (before, after) {
         return before.category == after.category && before.createdAt == after.createdAt && before.updatedAt == after.updatedAt && before.title == after.title && before.description == after.description && before.uid == after.uid && before.count != after.count

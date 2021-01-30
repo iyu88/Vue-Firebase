@@ -2,16 +2,22 @@
   <v-container fluid :class="$vuetify.breakpoint.xs ? 'pa-0' : ''">
     <v-card outlined :tile="$vuetify.breakpoint.xs" v-if="board">
       <v-toolbar color="transparent" dense flat >
+          <v-sheet width="90" class="mr-4">
+            <v-select :value="getCategory" :items="board.categories" @change="changeCategory" dense solo dark single-line hide-details background-color="info" ></v-select>
+          </v-sheet>
           <v-toolbar-title v-text="board.title"></v-toolbar-title>
-      <v-spacer/>
-      <v-btn icon @click="dialog=true"><v-icon>mdi-information-outline</v-icon></v-btn>
-      <template v-if="user">
-        <!-- <v-btn icon @click="write" :disabled="user.level > 0"><v-icon>mdi-pencil</v-icon></v-btn> -->
-        <v-btn icon @click="articleWrite" :disabled="user.level > 4"><v-icon>mdi-plus</v-icon></v-btn>
-      </template>
+        <v-spacer/>
+        <v-btn icon @click="dialog=true"><v-icon>mdi-information-outline</v-icon></v-btn>
+        <v-btn icon @click="$store.commit('toggleBoardType')">
+          <v-icon v-text="$store.state.boardTypeList ? 'mdi-format-list-bulleted' : 'mdi-text-box-outline'"></v-icon>
+        </v-btn>
+        <template v-if="user">
+          <!-- <v-btn icon @click="write" :disabled="user.level > 0"><v-icon>mdi-pencil</v-icon></v-btn> -->
+          <v-btn icon @click="articleWrite" :disabled="user.level > 4"><v-icon>mdi-plus</v-icon></v-btn>
+        </template>
       </v-toolbar>
       <v-divider />
-      <board-article :boardId="boardId" :board="board"></board-article>
+      <board-article :boardId="boardId" :board="board" :category="category"></board-article>
       <v-dialog v-model="dialog" max-width="300">
         <v-card>
           <v-toolbar color="transparent" dense flat>
@@ -66,7 +72,7 @@
               <v-list-item-title>
                 등록된 종류
               </v-list-item-title>
-              <v-list-item-subtitle>
+              <v-list-item-subtitle class="comment">
                 <v-chip color="info" label small v-for="item in board.categories" :key="item" class="mt-2 mr-2" v-text="item"></v-chip>
               </v-list-item-subtitle>
             </v-list-item-content>
@@ -121,7 +127,7 @@ import DisplayUser from '@/components/display-user'
 
 export default {
   components: { BoardArticle, DisplayTime, DisplayUser },
-  props: ['boardId'],
+  props: ['boardId', 'category'],
   data () {
     return {
       unsubscribe: null,
@@ -138,6 +144,10 @@ export default {
   computed: {
     user () {
       return this.$store.state.user
+    },
+    getCategory () {
+      if (!this.category) return '전체'
+      return this.category
     }
   },
   created () {
@@ -155,6 +165,7 @@ export default {
         const item = doc.data()
         item.createdAt = item.createdAt.toDate()
         item.updatedAt = item.updatedAt.toDate()
+        item.categories.unshift('전체')
         this.board = item
       }, console.err)
     },
@@ -163,6 +174,10 @@ export default {
     },
     async articleWrite () {
       this.$router.push({ path: this.$route.path + '/new', query: { action: 'write' } })
+    },
+    changeCategory (item) {
+      if (item === '전체') this.$router.push(this.$route.path)
+      else this.$router.push({ paht: this.$route.path, query: { category: item } })
     }
   }
 }
