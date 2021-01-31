@@ -31,9 +31,11 @@
               <v-text-field v-model="form.title" outlined label="제목" hide-details></v-text-field>
             </v-col>
             <v-col cols="12">
-              <editor v-if="articleId === 'new'" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="{ }"></editor>
+              <!-- <editor v-if="articleId === 'new'" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="{ }"></editor> -->
+              <editor v-if="!exists" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="options"></editor>
               <template v-else>
-                <editor v-if="form.content" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="{ }"></editor>
+                <!-- <editor v-if="form.content" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="{ }"></editor> -->
+                <editor v-if="form.content" :initialValue="form.content" ref="editor" initialEditType="wysiwyg" height="400px" :options="options"></editor>
                 <v-container v-else>
                   <v-row justify="center" align="center">
                     <v-progress-circular indeterminate></v-progress-circular>
@@ -50,7 +52,9 @@
 <script>
 import axios from 'axios'
 import getSummary from '@/util/getSummary'
+import editor from '../../../views/editor.vue'
 export default {
+  components: { editor },
   props: ['boardId', 'articleId', 'action'],
   data () {
     return {
@@ -58,13 +62,20 @@ export default {
         category: '일반',
         tags: [],
         title: '',
-        content: ''
+        content: '',
+        images: []
       },
       exists: false,
       loading: false,
       ref: null,
       article: null,
-      board: null
+      board: null,
+      options: {
+        language: 'ko',
+        hooks: {
+          addImageBloHook: this.addImageBloHook
+        }
+      }
     }
   },
   computed: {
@@ -90,7 +101,7 @@ export default {
       this.ref = this.$firebase.firestore().collection('boards').doc(this.boardId)
       const docBoard = await this.ref.get()
       this.board = docBoard.data()
-      if (this.articleId === 'new') return
+      // if (this.articleId === 'new') return
       const doc = await this.ref.collection('articles').doc(this.articleId).get()
       this.exists = doc.exists
       if (!this.exists) return
@@ -99,6 +110,8 @@ export default {
       this.form.title = item.title
       this.form.category = item.category
       this.form.tags = item.tags
+      this.form.images = item.images
+      if (!item.images) this.form.images = []
       const { data } = await axios.get(item.url)
       this.form.content = data
     },
@@ -116,11 +129,16 @@ export default {
           category: this.form.category,
           tags: this.form.tags,
           updatedAt: createdAt,
+          images: this.form.images,
           summary: getSummary(md, 300, 'data:image')
         }
+        /*
         if (this.articleId === 'new') {
           const id = createdAt.getTime().toString()
           const fn = id + '-' + this.fireUser.uid + '.md'
+        */
+        if (!this.exists) {
+          const fn = this.articleId + '-' + this.fireUser.uid + '.md'
           const sn = await this.$firebase.storage().ref().child('boards').child(this.boardId).child(fn).putString(md)
           doc.url = await sn.ref.getDownloadURL()
           doc.createdAt = createdAt
@@ -134,7 +152,8 @@ export default {
           }
           doc.likeCount = 0
           doc.likeUids = []
-          await this.ref.collection('articles').doc(id).set(doc)
+          // await this.ref.collection('articles').doc(id).set(doc)
+          await this.ref.collection('articles').doc(this.articleId).set(doc)
           this.$router.push('/board/' + this.boardId)
         } else {
           const fn = this.articleId + '-' + this.article.uid + '.md'
@@ -145,6 +164,31 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    async imageUpload (file) {
+      if (!this.fireUser) throw Error('로그인이 필요합니다.')
+      const id = new Date().getTime() + '-' + this.fireUser.uid + '-' + file.name
+      const sn = await this.$firebase.storage().ref().child('images').child('boards').child(this.boardId).child(this.articleId).child(id).put(file)
+      const url = await sn.ref.getDownloadURL()
+      const image = {
+        origin: {
+          name: file.name,
+          size: file.size,
+          id: id,
+          url: url
+        },
+        thumbnail: {
+          name: '',
+          size: 0,
+          id: '',
+          url: ''
+        }
+      }
+      this.form.images.push(image)
+      return url
+    },
+    addImageBloHook (blob, callback) {
+      this.imageUpload(blob).then(url => { callback(url, 'img') }).catch(console.error)
     }
   }
 }

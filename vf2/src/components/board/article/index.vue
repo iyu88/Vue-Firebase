@@ -28,10 +28,17 @@
                 {{item.category}}
                 <v-icon right>mdi-menu-right</v-icon>
               </v-btn>
+              <v-icon color="error" class="mr-2" v-if="newCheck(item.updatedAt)">mdi-fire</v-icon>
               {{item.title}}
             </v-list-item-title>
             <v-list-item-subtitle>
-              {{getSummary(item.summary, 100, '!')}}
+              <viewer v-if="item.summary" :initialValue="getSummary(item.summary, 100, '!')"></viewer>
+              <v-container v-else>
+                <v-row justify="center" align="center">
+                  <v-progress-circular indeterminate></v-progress-circular>
+                </v-row>
+              </v-container>
+              <!-- {{ getSummary(item.summary, 100, '!') }} -->
             </v-list-item-subtitle>
             <v-list-item-subtitle class="d-flex justify-space-between align-center">
               <display-time :time="item.createdAt"></display-time>
@@ -75,6 +82,7 @@
         </v-subheader>
         <v-card color="transparent" flat :to="category ? `${boardId}/${item.id}?category=${category}`:`${boardId}/${item.id}`">
           <v-card-title>
+            <v-icon color="error" class="mr-4" v-if="newCheck(item.updatedAt)">mdi-fire</v-icon>
             {{item.title}}
           </v-card-title>
           <v-card-text>
@@ -153,6 +161,7 @@ import { last } from 'lodash'
 import DisplayTime from '@/components/display-time.vue'
 import DisplayUser from '@/components/display-user.vue'
 import getSummary from '@/util/getSummary.js'
+import newCheck from '@/util/newCheck.js'
 const LIMIT = 5
 
 export default {
@@ -180,7 +189,8 @@ export default {
       order: 'createdAt',
       sort: 'desc',
       loading: false,
-      getSummary
+      getSummary,
+      newCheck
     }
   },
   computed: {

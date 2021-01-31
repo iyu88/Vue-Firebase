@@ -14,6 +14,7 @@
             {{article.category}}
             <v-icon v-if="!category" right>mdi-menu-right</v-icon>
           </v-btn>
+          <v-icon color="error" class="mr-2" v-if="newCheck(article.updatedAt)">mdi-fire</v-icon>
           {{article.title}}
         </v-toolbar-title>
         <v-spacer/>
@@ -106,6 +107,8 @@ import axios from 'axios'
 import DisplayTime from '@/components/display-time'
 import DisplayComment from '@/components/display-comment'
 import DisplayUser from '@/components/display-user'
+import newCheck from '@/util/newCheck.js'
+
 export default {
   components: { DisplayTime, DisplayComment, DisplayUser },
   props: ['boardId', 'articleId', 'category', 'tag'],
@@ -115,7 +118,8 @@ export default {
       ref: null,
       unsubscribe: null,
       article: null,
-      doc: null
+      doc: null,
+      newCheck
     }
   },
   computed: {

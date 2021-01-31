@@ -1,6 +1,14 @@
 <template>
-  <v-container fluid :class="$vuetify.breakpoint.xs ? 'pa-0' : ''">
-    <v-card outlined :tile="$vuetify.breakpoint.xs" v-if="board">
+  <v-container fluid v-if="!loaded">
+    <v-skeleton-loader type="card" v-for="i in 3" :key="i"></v-skeleton-loader>
+  </v-container>
+  <v-container fluid v-else-if="loaded && !board">
+    <v-alert type="warning" border="left">
+      데이터가 없습니다.
+    </v-alert>
+  </v-container>
+  <v-container fluid :class="$vuetify.breakpoint.xs ? 'pa-0' : ''" v-else>
+    <v-card outlined :tile="$vuetify.breakpoint.xs">
       <v-toolbar color="transparent" dense flat >
           <v-sheet width="90" class="mr-4">
             <v-select :value="getCategory" :items="board.categories" @change="changeCategory" dense solo dark single-line hide-details background-color="info" ></v-select>
@@ -104,7 +112,6 @@
         </v-card>
       </v-dialog>
     </v-card>
-    <v-skeleton-loader type="card" v-else></v-skeleton-loader>
   </v-container>
 </template>
 <!--
@@ -133,7 +140,8 @@ export default {
       unsubscribe: null,
       board: null,
       loading: false,
-      dialog: false
+      dialog: false,
+      loaded: false
     }
   },
   watch: {
@@ -161,6 +169,7 @@ export default {
       if (this.unsubscribe) this.unsubscribe()
       const ref = this.$firebase.firestore().collection('boards').doc(this.boardId)
       this.unsubscribe = ref.onSnapshot(doc => {
+        this.loaded = true
         if (!doc.exists) return this.write()
         const item = doc.data()
         item.createdAt = item.createdAt.toDate()
@@ -173,7 +182,7 @@ export default {
       this.$router.push({ path: this.$route.path, query: { action: 'write' } })
     },
     async articleWrite () {
-      this.$router.push({ path: this.$route.path + '/new', query: { action: 'write' } })
+      this.$router.push({ path: this.$route.path + '/' + new Date().getTime(), query: { action: 'write' } })
     },
     changeCategory (item) {
       if (item === '전체') this.$router.push(this.$route.path)

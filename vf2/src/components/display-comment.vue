@@ -21,20 +21,40 @@
             <display-user :user="item.user"></display-user>
           </v-list-item-action>
           <v-list-item-content>
-            <v-list-item-subtitle class="black--text comment" v-text="item.comment"></v-list-item-subtitle>
+            <v-list-item-subtitle v-if="!item.edit" class="black--text comment" v-text="item.comment"></v-list-item-subtitle>
+            <v-list-item-subtitle v-else>
+              <v-text-field
+                v-model="item.comment"
+                outlined
+                label="댓글 수정"
+                placeholder="Ctrl + Enter로 작성 가능"
+                append-icon="mdi-comment-edit"
+                @click:append="update(item)"
+                @keypress.ctrl.enter="update(item)"
+                hide-details
+                auto-grow
+                rows="1"
+                clearable
+                class="mt-2" />
+            </v-list-item-subtitle>
             <v-list-item-subtitle>
               <span class="font-italic"><display-time :time="item.createdAt"></display-time></span>
             </v-list-item-subtitle>
           </v-list-item-content>
+          <v-list-item-action class="ml-2">
+            <v-btn @click="item.edit=!item.edit" icon>
+              <v-icon :color="item.edit ? 'warning' : null">mdi-pencil</v-icon>
+            </v-btn>
+          </v-list-item-action>
+          <v-list-item-action v-if="(fireUser && fireUser.uid === item.uid) || (user && user.level === 0)">
+            <v-btn icon @click="remove(item)" class="ml-2">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </v-list-item-action>
           <v-list-item-action>
             <v-btn @click="like(item)" text>
               <v-icon left :color="liked(item) ? 'success': ''">mdi-thumb-up</v-icon>
               <span>{{item.likeCount}}</span>
-            </v-btn>
-          </v-list-item-action>
-          <v-list-item-action v-if="(fireUser && fireUser.uid === item.uid) || (user && user.level === 0)">
-            <v-btn icon @click="remove(item)">
-              <v-icon>mdi-delete</v-icon>
             </v-btn>
           </v-list-item-action>
         </template>
@@ -50,9 +70,9 @@
             <v-btn @click="like(item)" text>
               <v-icon left :color="liked(item) ? 'success': ''">mdi-thumb-up</v-icon>
               <span>{{item.likeCount}}</span>
-            </v-btn>
             <v-btn icon @click="remove(item)" v-if="(fireUser && fireUser.uid === item.uid) || (user && user.level === 0)">
               <v-icon>mdi-delete</v-icon>
+            </v-btn>
             </v-btn>
           </v-list-item-action>
         </template>
@@ -110,6 +130,7 @@ export default {
           item.id = doc.id
           item.createdAt = item.createdAt.toDate()
           item.updatedAt = item.updatedAt.toDate()
+          item.edit = false
           this.items.push(item)
         } else {
           findItem.comment = item.comment
@@ -196,6 +217,14 @@ export default {
       await this.docRef.collection('comments').doc(comment.id).delete()
       const i = this.items.findIndex(el => el.id === comment.id)
       this.items.splice(i, 1)
+    },
+    async update (comment) {
+      comment.updatedAt = new Date()
+      try {
+        await this.docRef.collection('comments').doc(comment.id).update(comment)
+      } finally {
+        comment.edit = false
+      }
     }
   }
 }
