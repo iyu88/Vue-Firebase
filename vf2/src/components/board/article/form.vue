@@ -52,6 +52,7 @@
 <script>
 import axios from 'axios'
 import getSummary from '@/util/getSummary'
+import imageCompress from '@/util/imageCompress'
 
 export default {
   props: ['boardId', 'articleId', 'action'],
@@ -63,6 +64,7 @@ export default {
         title: '',
         content: '',
         images: []
+        // thumbnails: []
       },
       exists: false,
       loading: false,
@@ -128,7 +130,8 @@ export default {
           category: this.form.category,
           tags: this.form.tags,
           updatedAt: createdAt,
-          images: this.form.images,
+          // images: this.form.images,
+          images: this.findImagesFromDoc(md, this.form.images),
           summary: getSummary(md, 300, 'data:image')
         }
         /*
@@ -166,28 +169,47 @@ export default {
     },
     async imageUpload (file) {
       if (!this.fireUser) throw Error('로그인이 필요합니다.')
-      const id = new Date().getTime() + '-' + this.fireUser.uid + '-' + file.name
-      const sn = await this.$firebase.storage().ref().child('images').child('boards').child(this.boardId).child(this.articleId).child(id).put(file)
-      const url = await sn.ref.getDownloadURL()
+      const thumbnail = await imageCompress(file)
       const image = {
+        /*
         origin: {
-          name: file.name,
           size: file.size,
-          id: id,
-          url: url
+          id: '',
+          url: ''
         },
         thumbnail: {
-          name: '',
-          size: 0,
+          size: thumbnail.size,
           id: '',
           url: ''
         }
+        */
+        size: file.size,
+        id: '',
+        url: '',
+        thumbSize: thumbnail.size,
+        thumbId: '',
+        thumbUrl: ''
       }
+
+      image.id = new Date().getTime() + '-' + this.fireUser.uid + '-' + file.name
+      const sn = await this.$firebase.storage().ref().child('images').child('boards').child(this.boardId).child(this.articleId).child(image.id).put(file)
+      image.origin.url = await sn.ref.getDownloadURL()
+
+      image.thumbId = new Date().getTime() + '-' + this.fireUser.uid + '-thumb-' + file.name
+      const snt = await this.$firebase.storage().ref().child('images').child('boards').child(this.boardId).child(this.articleId).child(image.thumbId).put(thumbnail)
+      image.thumbUrl = await snt.ref.getDownloadURL()
       this.form.images.push(image)
-      return url
+      // this.form.thumbnails.push(image.thumbnail)
+      return image
     },
     addImageBlobHook (blob, callback) {
-      this.imageUpload(blob).then(url => { callback(url, 'img') }).catch(console.error)
+      this.imageUpload(blob).then(image => { callback(image.url, 'img') }).catch(console.error)
+    },
+    findImagesFromDoc (md, images) {
+      const filteredImages = images.filter(image => {
+        return md.indexOf(image.url) >= 0
+      })
+      return filteredImages
     }
   }
 }

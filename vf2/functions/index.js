@@ -61,23 +61,80 @@ exports.onDeleteBoard = functions.region(region).firestore.document('borads/{bid
   await batch.commit()
 })
 
-exports.onCreateBoardArticle = functions.region(region).firestore.document('boards/{bid}/articles/{aid}').onCreate((snap, context) => {
+exports.onCreateBoardArticle = functions.region(region).firestore.document('boards/{bid}/articles/{aid}').onCreate(async(snap, context) => {
   const set = {
     count: admin.firestore.FieldValue.increment(1)
   }
   const doc = snap.data()
   if (doc.category) set.categories = admin.firestore.FieldValue.arrayUnion(doc.category)
   if (doc.tags.length) set.tags = admin.firestore.FieldValue.arrayUnion(...doc.tags)
-  return fdb.collection('boards').doc(context.params.bid).update(set)
+  try {
+    await fdb.collection('boards').doc(context.params.bid).update(set)
+  } catch (e) {
+    console.error('board info update err: ' + e.message)
+  }
+
+  if (doc.images.length) {
+    const ids = []
+    const thumbIds = []
+    doc.images.forEach(image => {
+      ids.push(image.id)
+      thumbIds.push(image.thumbId)
+    })
+  }
+  try {
+    const batch = fdb.batch()
+    const sn = await fdb.collection('tempFiles').where('id', 'in', ids).get()
+    sn.docs.forEach(doc => batch.delete(doc.ref))
+    const snt = await fdb.collection('tempFiles').where('id', 'in', thumbIds).get()
+    snt.docs.forEach(doc => batch.delete(doc.ref))
+    await batch.commit()
+  } catch (e) {
+    console.error('tempFiles remove err: ' + e.message)
+  }
+
+  await removeOldTempFiles()
 })
 
-exports.onUpdateBoardArticle = functions.region(region).firestore.document('boards/{bid}/articles/{aid}').onUpdate((change,context) => {
+exports.onUpdateBoardArticle = functions.region(region).firestore.document('boards/{bid}/articles/{aid}').onUpdate(async (change,context) => {
+  const isEqual = require('lodash').isEqual
   const set = {}
+  const beforeDoc = change.before.data()
   const doc = change.after.data()
-  if (doc.category) set.categories = admin.firestore.FieldValue.arrayUnion(doc.category)
-  if (doc.tags.length) set.tags = admin.firestore.FieldValue.arrayUnion(...doc.tags)
-  if (!Object.keys(set).length) return false
-  return fdb.collection('boards').doc(context.params.bid).update(set)
+  if (doc.category && doc.category != beforeDoc.category) set.categories = admin.firestore.FieldValue.arrayUnion(doc.category)
+  if (doc.tags.length && isEqual(beforeDoc.tags, doc.tags)) set.tags = admin.firestore.FieldValue.arrayUnion(...doc.tags)
+  if (Object.keys(set).length) await fdb.collection('boards').doc(context.params.bid).update(set)
+
+  const deleteImages = beforeDoc.images.filter(before => {
+    return !doc.images.some(after => before.id === after.id)
+  })
+
+  const imgs = []
+  imgs.push('images')
+  imgs.push('boards')
+  imgs.push(context.params.bid)
+  imgs.push(context.params.aid)
+  const p = imgs.join('/') + '/'
+  for (const image of deleteImages) {
+    await admin.storage().bucket().file(p + image.id).delete().catch(e => console.error('storage deleteImages remove err: ' + e.message))
+    await admin.storage().bucket().file(p + image.thumbId).delete().catch(e => console.error('storage remove err: ' + e.message))
+  }
+
+  const ids = []
+  const thumbIds = []
+  doc.images.forEach(image => {
+    ids.push(image.id)
+    thumbIds.push(image.thumbId)
+  })
+  try {
+    const batch = fdb.batch()
+    const sn = await fdb.collection('tempFiles').where('id', 'in', ids).get()
+    sn.docs.forEach(doc => batch.delete(doc.ref))
+    const snt = await fdb.collection('tempFiles').where('id', 'in', thumbIds).get()
+    snt.docs.forEach(doc => batch.delete(doc.ref))
+  } catch (e) {
+    console.error('tempFiles remove err: ' + e.message)
+  }
 })
 
 exports.onDeleteBoardArticle = functions.region(region).firestore.document('boards/{bid}/articles/{aid}').onDelete(async (snap, context) => {
@@ -98,8 +155,33 @@ exports.onDeleteBoardArticle = functions.region(region).firestore.document('boar
   ps.push(context.params.bid)
   ps.push(context.params.aid + '-' + snap.data().uid + ".md")
 
-  await admin.storage().bucket().file(ps.join('/')).delete().catch(e => console.error('storage remove err + ' + e.message))
+  await admin.storage().bucket().file(ps.join('/')).delete().catch(e => console.error('storage remove err: ' + e.message))
+
+  const images = []
+  images.push('images')
+  images.push('boards')
+  images.push(context.params.bid)
+  images.push(context.params.aid)
+  return admin.storage().bucket().deleteFiles({ prefix: images.join('/') })
 })
+
+exports.saveTempFiles = functions.region(region).storage.object().onFinalize(async (object) => {
+  const last = require('lodash').last
+  const name = object.name
+  if (last(name.split('.')) === 'md') return
+  const createdAt = new Date()
+  const id = createdAt.getTime().toString()
+  const set = {
+    name,
+    contentType: object.contentType,
+    size: object.size,
+    crc32c: object.crc32c,
+    createdAt,
+    id: last(name.split('/'))
+  }
+  await fdb.collection('tempFiles').doc(id).set(set)
+})
+
 
 exports.onCreateBoardComment = functions.region(region).firestore.document('boards/{bid}/articles/{aid}/comments/{cid}').onCreate((snap, context) => {
   return fdb.collection('boards').doc(context.params.bid).collection('articles').doc(context.params.aid).update({ commentCount: admin.firestore.FieldValue.increment(1) })
@@ -108,6 +190,19 @@ exports.onCreateBoardComment = functions.region(region).firestore.document('boar
 exports.onDeleteBoardComment = functions.region(region).firestore.document('boards/{bid}/articles/{aid}/comments/{cid}').onDelete((snap, context) => {
   return fdb.collection('boards').doc(context.params.bid).collection('articles').doc(context.params.aid).update({ commentCount: admin.firestore.FieldValue.increment(-1)})
 })
+
+const removeOldTempFiles = async () => {
+  const moment = require('moment')
+  const sn = await fdb.collection('tempFiles').where('createdAt', '<', moment().subtract(1, 'minutes').toDate()).orderBy('createdAt').limit(5).get()
+  if (sn.empty) return
+  const batch = fdb.batch()
+  for (const doc of sn.docs) {
+    const file = doc.data()
+    await admin.storage().bucket().file(file.name).delete().catch(e => console.error('tempFile remove err: ' + e.message))
+    batch.delete(doc.ref)
+  }
+  await batch.commit()
+}
 
 /*
 exports.incrementBoardCount = functions.firestore.document('boards/{bid}').onCreate(async(snap, context) => {

@@ -26,7 +26,7 @@
       </v-toolbar>
       <v-divider/>
       <v-card-text>
-        <viewer v-if="content" :initialValue="content"></viewer>
+        <viewer v-if="content" ref="viewer" :initialValue="content" @load="onEditorLoad"></viewer>
         <v-container v-else>
           <v-row justify="center" align="center">
             <v-progress-circular indeterminate></v-progress-circular>
@@ -108,6 +108,7 @@ import DisplayTime from '@/components/display-time'
 import DisplayComment from '@/components/display-comment'
 import DisplayUser from '@/components/display-user'
 import newCheck from '@/util/newCheck.js'
+import addYoutubeIframe from '@/util/addYoutubeIframe.js'
 
 export default {
   components: { DisplayTime, DisplayComment, DisplayUser },
@@ -225,6 +226,10 @@ export default {
       us.push(doc.id)
       if (this.category) this.$router.push({ path: us.join('/'), query: { category: this.category } })
       else this.$router.push({ path: us.join('/') })
+    },
+    onEditorLoad (v) {
+      const el = v.preview.el
+      this.html = addYoutubeIframe(el, this.$vuetify.breakpoint)
     }
   }
 }
