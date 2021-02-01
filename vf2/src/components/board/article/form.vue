@@ -52,9 +52,8 @@
 <script>
 import axios from 'axios'
 import getSummary from '@/util/getSummary'
-import editor from '../../../views/editor.vue'
+
 export default {
-  components: { editor },
   props: ['boardId', 'articleId', 'action'],
   data () {
     return {
@@ -73,7 +72,7 @@ export default {
       options: {
         language: 'ko',
         hooks: {
-          addImageBloHook: this.addImageBloHook
+          addImageBlobHook: this.addImageBlobHook
         }
       }
     }
@@ -187,7 +186,7 @@ export default {
       this.form.images.push(image)
       return url
     },
-    addImageBloHook (blob, callback) {
+    addImageBlobHook (blob, callback) {
       this.imageUpload(blob).then(url => { callback(url, 'img') }).catch(console.error)
     }
   }
