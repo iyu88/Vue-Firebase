@@ -14,7 +14,7 @@
             {{article.category}}
             <v-icon v-if="!category" right>mdi-menu-right</v-icon>
           </v-btn>
-          <v-icon color="error" class="mr-2" v-if="newCheck(article.updatedAt)">mdi-fire</v-icon>
+          <v-icon color="error" class="mr-2" v-if="newCheck(article.updatedAt, 'days', 1)">mdi-fire</v-icon>
           {{article.title}}
         </v-toolbar-title>
         <v-spacer/>
@@ -63,8 +63,8 @@
           <v-icon left :color="article.commentCount ? 'info' : ''">mdi-comment</v-icon>
           <span class="body-2">{{article.commentCount}}</span>
         </v-sheet>
-        <v-btn text @click="like">
-          <v-icon left :color="liked ? 'success' : ''">mdi-thumb-up</v-icon>
+        <v-btn rounded @click="like">
+          <v-icon left :color="liked ? 'success' : ''">mdi-thumb-up-outline</v-icon>
           <span class="body-2">{{article.likeCount}}</span>
         </v-btn>
       </v-card-actions>
@@ -179,7 +179,20 @@ export default {
       this.$router.push({ path: this.$route.path, query: { action: 'write' } })
     },
     async remove () {
-      await this.ref.delete()
+      const r = await this.$swal.fire({
+        title: '정말 삭제하시겠습니까?',
+        text: '삭제 후 되돌릴 수 없습니다.',
+        icon: 'error',
+        showCancelButton: true
+      })
+      if (!r.value) {
+        throw Error('error')
+      } else {
+        await this.ref.delete()
+      }
+      // throw Error('error')
+      // this.$toasted.global.notice('hihi')
+      // await this.ref.delete()
     },
     back () {
       const us = this.$route.path.split('/')

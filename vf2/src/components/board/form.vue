@@ -126,8 +126,11 @@ export default {
             photoURL: this.$store.state.user.photoURL,
             displayName: this.$store.state.user.displayName
           }
-          form.categories = ['일반']
-          form.tags = ['vue', 'firebase']
+          form.readCount = 0
+          form.commentCount = 0
+          form.likeCount = 0
+          // form.categories = ['일반']
+          // form.tags = ['vue', 'firebase']
           await this.ref.set(form)
         } else {
           await this.ref.update(form)

@@ -7,6 +7,8 @@ import './plugins/firebase'
 import './error'
 import './plugins/editor'
 import './plugins/moment.js'
+import './plugins/toast.js'
+import './plugins/swal.js'
 
 Vue.config.productionTip = false
 
