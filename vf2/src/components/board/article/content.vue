@@ -168,6 +168,12 @@ export default {
         item.updatedAt = item.updatedAt.toDate()
         if (!this.article || this.article.url !== item.url) this.fetch(item.url)
         this.article = item
+        /*
+        document.title = item.title
+        document.querySelector('head meta[name="description"]').setAttribute('content', item.summary)
+        document.querySelector('head meta[property="og:title"]').setAttribute('content', item.title)
+        document.querySelector('head meta[property="og:image"]').setAttribute('content', item.images.length ? item.images[0].thumbUrl : '/logo.png')
+        */
       }, console.error)
     },
     async fetch (url) {

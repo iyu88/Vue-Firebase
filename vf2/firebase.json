@@ -15,6 +15,10 @@
     ],
     "rewrites": [
       {
+        "source": "/board/*/*",
+        "function": "seo"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

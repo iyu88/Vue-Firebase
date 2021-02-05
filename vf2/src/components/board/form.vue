@@ -10,6 +10,7 @@
         </v-toolbar>
         <v-card-text>
           <v-text-field v-model="form.category" outlined label="종류"></v-text-field>
+          <v-select v-model="form.type" :items="types" outlined label="유형" :disabled="exists"></v-select>
           <v-text-field v-model="form.title" outlined label="제목"></v-text-field>
           <v-textarea v-model="form.description" outlined label="설명"></v-textarea>
         </v-card-text>
@@ -73,13 +74,15 @@ export default {
         title: '',
         description: '',
         categories: [],
-        tags: []
+        tags: [],
+        type: ''
       },
       exists: false,
       loading: false,
       ref: null,
       category: '',
-      tag: ''
+      tag: '',
+      types: ['일반', '갤러리', '페이지']
     }
   },
   watch: {
@@ -102,6 +105,7 @@ export default {
         this.form.description = item.description
         this.form.categories = item.categories
         this.form.tags = item.tags
+        this.form.type = item.type
       }
     },
     async save () {
@@ -113,7 +117,8 @@ export default {
         description: this.form.description,
         updatedAt: new Date(),
         tags: this.form.tags,
-        categories: this.form.categories
+        categories: this.form.categories,
+        type: this.form.type
       }
       this.loading = true
       try {

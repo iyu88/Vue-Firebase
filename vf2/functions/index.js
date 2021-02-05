@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin")
-const serviceAccount = require("./key.json")
+const serviceAccount = require("./key.json");
+const { plural } = require("pluralize");
 const region = functions.config().admin.region || 'us-central1'
 
 // var admin = require("firebase-admin");
@@ -217,3 +218,38 @@ exports.decrementBoardCount = functions.firestore.document('boards/{bid}').onDel
   await fdb.collection('meta').doc('boards').update('count', admin.firestore.FieldValue.increment(-1))
 })
 */
+
+exports.seo = functions.https.onRequest(async (req,res) => {
+  const { parse } = require('node-html-parser')
+  const fs = require('fs')
+  const pluralize = require('pluralize')
+  const html = fs.readFileSync('index.html').toString()
+  const root = parse(html)
+  
+  const ps = req.path.split('/')
+  ps.shift()
+  ps.forEach((v, i) => console.log(i, v))
+  if (ps.length !== 3) return res.send(html)
+  const mainCollection = pluralize(ps.shift())
+  const board = ps.shift()
+  const article = ps.shift()
+
+  const doc = await fdb.collection(mainCollection).doc(board).collection('articles').doc(article).get()
+
+  if (!doc.exists) return res.send(html)
+  const item = doc.data()
+
+  const child = root.lastChild.childNodes[0]
+  const title = child.childNodes[0]
+  const description = child.childNodes[1]
+  const ogTitle = child.childNodes[2]
+  const ogDescription = child.childNodes[3]
+  const ogImage = child.childNodes[4]
+
+  title.set_content(item.title)
+  description.setAttribute('content', item.summary.substr(0, 80))
+  ogTitle.setAttribute('content', item.title)
+  ogDescription.setAttribute('content', item.summary.substr(0, 80))
+  ogImage.setAttribute('content', item.images.length ? item.images[0].thumbUrl : '/logo.png')
+  res.status(200).send(root.toString())
+})
